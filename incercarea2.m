@@ -3,6 +3,13 @@
 %hyperIm = hyperIm(3000:5000,1:3000,:); % Reduce image size if you experience RAM issues
 clear all;
 hyperIm = imread('ortho.tif');
+% Select Resolution used to convert shadow map to correction map
+computeResolution = [256 256];
+%computeResolution = [N M];
+maxCorrAmplitude = 7;
+
+hyperIm = imresize(hyperIm,computeResolution);
+
 % First channel in monochromatic in the 470-650 nm range
 panChannel = hyperIm(:,:,1);
 % Image coming from the VIS camera 470-650 nm
@@ -24,51 +31,34 @@ refl = (refl - min(refl(:))) / (max(refl(:)) - min(refl(:)));
 rgb = refl(:,:,[16 8 2]);
 rgb(:) = imadjust(rgb(:),stretchlim(rgb(:),[.01 .99]));
 [N M B] = size(refl);
-N = 256;
-M = 256;
-% Compress dataset
-refl_comp = zeros([N M]);
-for wavelength = 1:B
-    refl_comp(:, :, wavelength) = imresize(refl(:, :, wavelength), [N M]);
-end
 
-refl = refl_comp;
 %% Generate shadow map
 % Currently computed as geometric mean of channels
-
-
-%The one with geometric averages
 shadowMapOld = ones([N M]);
-
-%The one we'll use
-shadowMap = ones([N M]);
-
-visShadowMap = shadowMapOld;
+visShadowMapOld = shadowMapOld;
 for b = 1:B
     shadowMapOld = shadowMapOld .* (1-refl(:,:,b)) ;
 end
 
-
 %Number of clusters
 k = 10;
 
-
-
-refl_shaped = reshape(refl_comp, [N * M B]);
+refl_shaped = reshape(refl, [N * M B]);
 
 [idx C] = kmeans(refl_shaped, k);
-
-idx = reshape(idx, [N M]);
+shadowMap = zeros(size(shadowMapOld));
+idx = reshape(idx, [N M]);  
 for cluster = 1:k
-    media = sum(shadowMapOld .* (cluster * (ones(size(idx)) == idx)) / sum(cluster * (ones(size(idx)) == idx)));
+    media = sum(shadowMapOld .* (cluster * (ones(size(idx))) == idx) / sum(cluster * (ones(size(idx)) == idx)));
 
-    shadowMap = shadowMap + (media - shadowMapOld) .* (cluster * (ones(size(idx)) == idx))  ;
+    shadowMap = shadowMap + ((media - shadowMapOld) .* (cluster * (ones(size(idx))) == idx)) .^ 2  ;
 end
 
-% % Normalize shadow map between 0..1
-% aux = shadowMapOld(alpha).^(1/B);
-% shadowMapOld(alpha) = imadjust(aux,stretchlim(aux,[.1 .9999]));
+% shadowMap = shadowMapOld;
 
+% % Normalize shadow map between 0..1
+aux = shadowMap(alpha).^(1/B);
+shadowMap(alpha) = imadjust(aux,stretchlim(aux,[.1 .9999]));
 
 % Show the shadow map vs rgb
 figure(1);
@@ -82,15 +72,21 @@ axis image;
 linkaxes([p1 p2]);
 
 % Show distribution of shadow map
-% figure(2);
-% hist(shadowMap(alpha),200);
+figure(2);
+hist(shadowMap(alpha),200);
 
 %% Compute per band shadow correction
 
+% Select Resolution used to convert shadow map to correction map
+computeResolution = [256 256];
+%computeResolution = [N M];
+maxCorrAmplitude = 7;
+
+shadowMapSmall = imresize(shadowMap,computeResolution);
 
 % Plot resized Shadow map
 figure(3);
-imagesc(shadowMap);
+imagesc(shadowMapSmall);
 colormap gray;
 axis image;
 pause(0.5);
@@ -122,7 +118,7 @@ for b = bandsToCompute
     upperBound = [ x*0 + 0.9; y*0 + maxCorrAmplitude;  2 ];
     options = [];
     % Find optimal parameters
-    xySolved = fminsearchbnd(@CloudCorrFuncMinXY,xy,lowerBound, upperBound, options, shadowMap, bandIm);
+    xySolved = fminsearchbnd(@CloudCorrFuncMinXY,xy,lowerBound, upperBound, options, shadowMapSmall, bandIm);
     
     % Recover PCHIP optimal params
     xSolved = xySolved(1:nParams);
