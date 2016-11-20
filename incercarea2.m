@@ -73,33 +73,26 @@ shadowMap(alpha) = imadjust(aux,stretchlim(aux,[.1 .9999]));
 
 % Show the shadow map vs rgb
 figure(1);
-p1 = subplot(1,2,1);
 imagesc(rgb);
 axis image;
-p2 = subplot(1,2,2);
+
+figure(2);
 imagesc(shadowMap);
 colormap gray;
 axis image;
-p3 = subplot(1,2,3);
+
+figure(4);
 imagesc(clusters);
 colormap gray;
 axis image;
-linkaxes([p1 p2 p3]);
 
-% Show distribution of shadow map
-figure(2);
-hist(shadowMap(alpha),200);
+% % Show distribution of shadow map
+% figure(4);
+% hist(shadowMap(alpha),200);
 
 %% Compute per band shadow correction
 
 shadowMapSmall = shadowMap;
-
-% Plot resized Shadow map
-figure(3);
-imagesc(shadowMapSmall);
-colormap gray;
-axis image;
-pause(0.5);
 
 % For every band
 bandsToCompute = [16 8 2]; % Only RGB for fast visual validation
@@ -142,7 +135,7 @@ for b = bandsToCompute
     reflCorr(:,:,b) = max(min(reflCorr(:,:,b),1),0);
     
     % Show corrected band vs original band
-    figure(4);
+    figure(5);
     p1 = subplot(2,2,4);
     imagesc(refl(:, :, b)); axis image; colormap gray;
     title(sprintf('Original band'));
@@ -159,7 +152,7 @@ for b = bandsToCompute
 end
 
 %% QA1: Show corrected RGB
-figure(5);
+figure(6);
 rgbCorr = reflCorr(:,:,[16 8 2]);
 rgbCorr(:) = imadjust(rgbCorr(:),stretchlim(rgbCorr(:),[.01 .99]));
 
@@ -174,7 +167,7 @@ axis image;
 linkaxes([p2 p3 p4]);
 
 %% QA2: Check and compare spectra before and after correction
-figID = 6;
+figID = 7;
 figure(figID);
 subplot 121
 hold off;
@@ -257,7 +250,7 @@ samePts = load('sunnyPts.mat');
 RMSEsCorr = EvalRMSE(corrPts.evalPoints, refl, reflCorr);
 RMSEsSame = EvalRMSE(samePts.evalPoints, refl, reflCorr);
 
-figure(7);
+figure(8);
 subplot 121
 hist(RMSEsCorr*100,20);
 xlim([0 20]);
