@@ -32,6 +32,8 @@ rgb = refl(:,:,[16 8 2]);
 rgb(:) = imadjust(rgb(:),stretchlim(rgb(:),[.01 .99]));
 [N M B] = size(refl);
 
+%Up until here was data extraction
+
 %% Generate shadow map
 % Currently computed as geometric mean of channels
 shadowMapOld = ones([N M]);
@@ -45,13 +47,22 @@ k = 10;
 
 refl_shaped = reshape(refl, [N * M B]);
 
-[idx C] = kmeans(refl_shaped, k);
+[idx C] = KMeansCustom(refl_shaped, k);
 shadowMap = zeros(size(shadowMapOld));
+clusters = zeros(size(shadowMapOld));
 idx = reshape(idx, [N M]);  
+% for cluster = 1:k
+%     media = sum(shadowMapOld .* (cluster * (ones(size(idx))) == idx) / sum(cluster * (ones(size(idx)) == idx)));
+
+%     shadowMap = shadowMap + ((media - shadowMapOld) .* (cluster * (ones(size(idx))) == idx)) .^ 2  ;
+% end
+
 for cluster = 1:k
     media = sum(shadowMapOld .* (cluster * (ones(size(idx))) == idx) / sum(cluster * (ones(size(idx)) == idx)));
 
     shadowMap = shadowMap + ((media - shadowMapOld) .* (cluster * (ones(size(idx))) == idx)) .^ 2  ;
+    clusters = clusters + ((media) .* (cluster * (ones(size(idx))) == idx)) .^ 2  ;
+
 end
 
 % shadowMap = shadowMapOld;
@@ -69,7 +80,11 @@ p2 = subplot(1,2,2);
 imagesc(shadowMap);
 colormap gray;
 axis image;
-linkaxes([p1 p2]);
+p3 = subplot(1,2,3);
+imagesc(clusters);
+colormap gray;
+axis image;
+linkaxes([p1 p2 p3]);
 
 % Show distribution of shadow map
 figure(2);
@@ -77,12 +92,7 @@ hist(shadowMap(alpha),200);
 
 %% Compute per band shadow correction
 
-% Select Resolution used to convert shadow map to correction map
-computeResolution = [256 256];
-%computeResolution = [N M];
-maxCorrAmplitude = 7;
-
-shadowMapSmall = imresize(shadowMap,computeResolution);
+shadowMapSmall = shadowMap;
 
 % Plot resized Shadow map
 figure(3);
