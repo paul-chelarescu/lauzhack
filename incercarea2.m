@@ -96,7 +96,8 @@ shadowMapSmall = shadowMap;
 
 % For every band
 bandsToCompute = [16 8 2]; % Only RGB for fast visual validation
-bandsToCompute = 1:B; % All image bands
+%bandsToCompute = 1:B; % All image bands
+
 reflCorr = refl * 0; % Allocate memory for output reflectance cube
 for b = bandsToCompute
     
@@ -104,7 +105,7 @@ for b = bandsToCompute
     bandIm = refl(:,:,b);
     bandIm = imresize(bandIm,computeResolution);
     
-    nParams = 2; % Select number of PCHIP parameters to define shadowMap -> correctionMap conversion
+    nParams = 3; % Select number of PCHIP parameters to define shadowMap -> correctionMap conversion
     x = linspace(0.1,0.9,nParams);
     y = zeros([nParams+1 1])+0.1;
     x = x(:); y = y(:);
@@ -117,8 +118,8 @@ for b = bandsToCompute
     % X between 0.1 and 0.9 (mapping input shadow map intensity)
     % Y between 0.1 and MaxCorrectionFactor (mapping output correction intensity)
     % Gamma between 0.1 and 2 (forcing and exponential compensation if necessary)
-    lowerBound = [ x*0 + 0.1; y*0 + 0.1;              0.1 ];
-    upperBound = [ x*0 + 0.9; y*0 + maxCorrAmplitude;  2 ];
+    lowerBound = [ x*0 + 0.1; y*0 + 0.1;              1 ];
+    upperBound = [ x*0 + 0.9; y*0 + maxCorrAmplitude;  10 ];
     options = [];
     % Find optimal parameters
     xySolved = fminsearchbnd(@CloudCorrFuncMinXY,xy,lowerBound, upperBound, options, shadowMapSmall, bandIm);
