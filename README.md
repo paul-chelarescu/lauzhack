@@ -4,7 +4,7 @@ Farmers want to take batter decisions about how to manage their crops.
 
 How do they do that?
 
-[Gamaya](http://gamaya.com/) scans the crops with low altitude drones using high spectoscopy cameras.
+[Gamaya](http://gamaya.com/) scans the crops with low altitude drones using high spectroscopy cameras.
 
 Cameras that not only take pictures in red, green, blue, but in many, many other wavelenghts - useful for detecting what materials is in that area.
 
